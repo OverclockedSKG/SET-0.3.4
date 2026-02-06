@@ -1,3 +1,4 @@
-var int nigga = 12
-set "nigga"
-if nigga eq 67 set "digga" : set "jew"
+var int hi = 67
+set "hi"
+set hi
+if hi gt 1 set hi : set "1234"

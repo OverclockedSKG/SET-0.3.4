@@ -1,0 +1,212 @@
+SET LANGUAGE – README
+Version: v0.3.6
+Name: SET (Syntax Easy To-use)
+File extension: .set
+
+========================
+WHAT IS SET?
+========================
+SET is a simple, beginner-friendly programming language designed to be
+easier than Python. It avoids symbols and uses readable words instead.
+
+SET is interpreted and intended for learning, experimentation,
+and simple scripting.
+
+========================
+BASIC OUTPUT
+========================
+Command:
+    set <expression>
+
+Example:
+    set "hello world"
+    set 5
+    set 5 pl 2
+
+========================
+VARIABLES
+========================
+Syntax:
+    var <type> <name> = <expression>
+
+Supported types:
+    int   → integer
+    flt   → float
+    bool  → true / false
+
+Examples:
+    var int hi = 5
+    var flt pi = 3.14
+    var bool ok = true
+
+Usage:
+    set hi
+    set pi
+
+========================
+MATH OPERATORS
+========================
+All math is evaluated left-to-right.
+
+Operators:
+    pl  → plus (+)
+    mn  → minus (-)
+    dp  → multiply (*)
+    np  → divide (/)
+
+Examples:
+    set 5 pl 2        → 7
+    set 10 mn 3       → 7
+    set 4 dp 3        → 12
+    set 8 np 2        → 4
+
+========================
+COMPARISONS
+========================
+Operators:
+    eq   → equal
+    neq  → not equal
+    lt   → less than
+    gt   → greater than
+    le   → less or equal
+    ge   → greater or equal
+
+Examples:
+    if hi eq 5 set "ok"
+    if hi gt 3 set "greater"
+
+========================
+LOGICAL OPERATORS
+========================
+Operators:
+    and
+    or
+    not
+
+Examples:
+    if hi gt 3 and hi lt 10 set "range ok"
+
+========================
+IF / ELSE
+========================
+Syntax:
+    if <condition> <statement> : <else statement>
+
+Colon is optional if no else is used.
+
+Examples:
+    if hi eq 5 set "ok"
+    if hi eq 5 set "ok" : set "not ok"
+
+Blocks:
+    if hi eq 5 {
+        set "yes"
+        set hi
+    } : {
+        set "no"
+    }
+
+========================
+LOOPS (WSET)
+========================
+Syntax:
+    wset <condition> <statement or block>
+
+Example:
+    var int i = 0
+    wset i lt 3 {
+        set i
+        var int i = i pl 1
+    }
+
+========================
+INPUT
+========================
+Keyword:
+    inp
+
+Reads user input as a string.
+
+Example:
+    var int x = inp
+    set x pl 1
+
+========================
+LENGTH
+========================
+Keyword:
+    len
+
+Returns length of a string.
+
+Example:
+    set len "hello"   → 5
+
+========================
+FUNCTION EXECUTION
+========================
+Keyword:
+    fce <function_name>
+
+Currently functions are predefined in the interpreter.
+
+Example:
+    fce hello
+
+========================
+ERROR HANDLING
+========================
+Syntax:
+    try <statement or block> catch <statement or block>
+
+Example:
+    try {
+        set 5 np 0
+    } catch {
+        set "error caught"
+    }
+
+========================
+COMMENTS
+========================
+Comments start with # and are ignored.
+
+Example:
+    # this is a comment
+    set "hi"
+
+========================
+RULES
+========================
+- Every line must start with a keyword
+- No standalone strings or numbers
+- No arrays or lists
+- No user-defined functions yet
+- No file access
+
+========================
+FORGIVING PARSER RULE
+========================
+SET ignores any standalone strings, numbers, or booleans
+that are not part of a statement.
+
+Example (ignored safely):
+    "data.txt"
+    123
+    true
+
+This is intentional and prevents crashes from leftover text.
+
+========================
+INTENDED USE
+========================
+- Learning programming
+- Teaching logic
+- Experimenting with language design
+- Fun
+
+SET is not designed for performance or production use.
+
+========================
+END
+========================

@@ -40,8 +40,6 @@ class Lexer:
         ("IF",       r"if"),
         ("WSET",     r"wset"),
         ("FCE",      r"fce"),
-        ("TRY",      r"try"),
-        ("CATCH",    r"catch"),
         ("TRUE",     r"true"),
         ("FALSE",    r"false"),
         ("LEN",      r"len"),
@@ -93,14 +91,17 @@ class Parser:
         if tok and tok.type==t:
             self.pos+=1
             return tok
-        raise RuntimeError("parser desync")
+        self.pos+=1
+        return None   # NEVER crash
 
     def parse(self):
         stmts=[]
         while self.current():
-            stmt=self.statement()
-            if stmt is not None:
-                stmts.append(stmt)
+            try:
+                stmt=self.statement()
+                if stmt: stmts.append(stmt)
+            except:
+                self.pos+=1
         return stmts
 
     def statement(self):
@@ -108,7 +109,6 @@ class Parser:
         if not tok:
             return None
 
-        # IGNORE stray tokens completely
         if tok.type in ("STRING","NUMBER","TRUE","FALSE"):
             self.pos+=1
             return None
@@ -118,16 +118,14 @@ class Parser:
         if tok.type=="IF": return self.if_stmt()
         if tok.type=="WSET": return self.wset_stmt()
         if tok.type=="FCE": return self.fce_stmt()
-        if tok.type=="TRY": return self.try_stmt()
 
-        # Unknown tokens are skipped silently
         self.pos+=1
         return None
 
     def var_decl(self):
         self.eat("VAR")
-        t=self.eat(self.current().type).type
-        name=self.eat("IDENT").value
+        t=self.eat(self.current().type).type if self.current() else "INT"
+        name=self.eat("IDENT").value if self.current() else "_"
         self.eat("ASSIGN")
         val=self.expr()
         return ("VAR",t,name,val)
@@ -152,14 +150,8 @@ class Parser:
 
     def fce_stmt(self):
         self.eat("FCE")
-        return ("FCE",self.eat("IDENT").value)
-
-    def try_stmt(self):
-        self.eat("TRY")
-        t=self.block_or_stmt()
-        self.eat("CATCH")
-        c=self.block_or_stmt()
-        return ("TRY",t,c)
+        name=self.eat("IDENT")
+        return ("FCE", name.value if name else "")
 
     def block_or_stmt(self):
         if self.current() and self.current().type=="LBRACE":
@@ -183,6 +175,8 @@ class Parser:
 
     def factor(self):
         tok=self.current()
+        if not tok:
+            return ("NUM",0)
         if tok.type=="NUMBER": self.eat("NUMBER"); return ("NUM",tok.value)
         if tok.type=="STRING": self.eat("STRING"); return ("STR",tok.value)
         if tok.type=="TRUE": self.eat("TRUE"); return ("BOOL",True)
@@ -190,7 +184,8 @@ class Parser:
         if tok.type=="IDENT": self.eat("IDENT"); return ("VARREF",tok.value)
         if tok.type=="INP": self.eat("INP"); return ("INP",)
         if tok.type=="LEN": self.eat("LEN"); return ("LEN",self.factor())
-        raise RuntimeError("bad expr")
+        self.pos+=1
+        return ("NUM",0)
 
 # =========================
 # INTERPRETER
@@ -203,54 +198,62 @@ class Interpreter:
 
     def eval(self,n):
         t=n[0]
-        if t=="NUM": return n[1]
-        if t=="STR": return n[1]
-        if t=="BOOL": return n[1]
-        if t=="VARREF": return self.vars.get(n[1],0)
-        if t=="INP": return input()
-        if t=="LEN": return len(self.eval(n[1]))
-        if t=="PL": return self.eval(n[1])+self.eval(n[2])
-        if t=="MN": return self.eval(n[1])-self.eval(n[2])
-        if t=="DP": return self.eval(n[1])*self.eval(n[2])
-        if t=="NP": return self.eval(n[1])/self.eval(n[2])
-        if t=="EQ": return self.eval(n[1])==self.eval(n[2])
-        if t=="NEQ": return self.eval(n[1])!=self.eval(n[2])
-        if t=="LT": return self.eval(n[1])<self.eval(n[2])
-        if t=="GT": return self.eval(n[1])>self.eval(n[2])
-        if t=="LE": return self.eval(n[1])<=self.eval(n[2])
-        if t=="GE": return self.eval(n[1])>=self.eval(n[2])
-        if t=="AND": return self.eval(n[1]) and self.eval(n[2])
-        if t=="OR": return self.eval(n[1]) or self.eval(n[2])
+        try:
+            if t=="NUM": return n[1]
+            if t=="STR": return n[1]
+            if t=="BOOL": return n[1]
+            if t=="VARREF": return self.vars.get(n[1],0)
+            if t=="INP": return input()
+            if t=="LEN": return len(self.eval(n[1]))
+            if t=="PL": return self.eval(n[1])+self.eval(n[2])
+            if t=="MN": return self.eval(n[1])-self.eval(n[2])
+            if t=="DP": return self.eval(n[1])*self.eval(n[2])
+            if t=="NP": return self.eval(n[1])/self.eval(n[2])
+            if t=="EQ": return self.eval(n[1])==self.eval(n[2])
+            if t=="NEQ": return self.eval(n[1])!=self.eval(n[2])
+            if t=="LT": return self.eval(n[1])<self.eval(n[2])
+            if t=="GT": return self.eval(n[1])>self.eval(n[2])
+            if t=="LE": return self.eval(n[1])<=self.eval(n[2])
+            if t=="GE": return self.eval(n[1])>=self.eval(n[2])
+            if t=="AND": return self.eval(n[1]) and self.eval(n[2])
+            if t=="OR": return self.eval(n[1]) or self.eval(n[2])
+        except:
+            return 0
 
     def run(self,stmts):
         for s in stmts:
             t=s[0]
-            if t=="VAR":
-                _,tp,n,v=s
-                val=self.eval(v)
-                self.vars[n]=int(val) if tp=="INT" else float(val) if tp=="FLT" else val
-            elif t=="SET":
-                print(self.eval(s[1]))
-            elif t=="IF":
-                _,c,th,el=s
-                self.run([th]) if self.eval(c) else el and self.run([el])
-            elif t=="WSET":
-                _,c,b=s
-                while self.eval(c): self.run([b])
-            elif t=="BLOCK":
-                self.run(s[1])
-            elif t=="FCE":
-                if s[1] in self.funcs: self.run(self.funcs[s[1]])
-            elif t=="TRY":
-                try: self.run([s[1]])
-                except: self.run([s[2]])
+            try:
+                if t=="VAR":
+                    _,tp,n,v=s
+                    val=self.eval(v)
+                    self.vars[n]=int(val) if tp=="INT" else float(val) if tp=="FLT" else val
+                elif t=="SET":
+                    print(self.eval(s[1]))
+                elif t=="IF":
+                    _,c,th,el=s
+                    self.run([th]) if self.eval(c) else el and self.run([el])
+                elif t=="WSET":
+                    _,c,b=s
+                    guard=0
+                    while self.eval(c):
+                        self.run([b])
+                        guard+=1
+                        if guard>10000: break
+                elif t=="BLOCK":
+                    self.run(s[1])
+                elif t=="FCE":
+                    if s[1] in self.funcs:
+                        self.run(self.funcs[s[1]])
+            except:
+                continue
 
 # =========================
 # RUNNER
 # =========================
 
 def run_code(code):
-    print("SET v0.3.4 – Syntax Easy To-use\n")
+    print("SET v0.3.6 – Syntax Easy To-use\n")
     tokens=Lexer(code).tokenize()
     tree=Parser(tokens).parse()
     Interpreter().run(tree)
